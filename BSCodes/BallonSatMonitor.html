@@ -1,0 +1,156 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+     <link rel="stylesheet" href="./resources/bootstrap.min.css">
+     <link rel="shortcut icon" href="./resources/nitrlogo.png">
+
+     <style type="text/css">
+     td{
+     	color:white;
+     	font-weight: bold;
+     }
+     </style>
+   </head>
+	
+
+
+
+   <body background="./resources/bg.jpg">
+
+   <div style="position: fixed;margin-left:50em;margin-top: 30em;color:white">
+   		<img src="./resources/nitrlogo.png" height="30%" width="30%">
+   		<h2 style="margin-left: -1.4em">NIT Rourkela</h2>
+
+   		<div id="imgbutton" style="display: none;margin-left: -2.7em">
+	      <a href="./resources/rcv.jpg" target="_blank"><button class="btn-info">VIEW IMAGE</button></a>
+	      <a href="./resources/gmap.html" target="_blank"><button class="btn-info">VIEW MAP</button></a>
+
+      	</div>
+   </div>
+   
+      <div id="sse">
+         <button class="btn-warning"><a href="javascript:WebSocketTest()">Connect 2 BS Server</a></button>
+      </div>
+
+      <div id="BStable" style="display: none;background: rgba(0,0,0,0.7);color:white">
+
+
+			<div class="container">
+			  <h2>BalloonSat Sensor Data</h2>
+			  <!--<p></p>  -->          
+			  <table class="table">
+			    <thead>
+			      <tr>
+			        <th>Hydrogen PPM(S1)</th>
+			        <th>Alcohol PPM(S2)</th>
+			        <th>Carbon Dioxide PPM(S3)</th>
+			        <th>Carbon Monoxide PPM(S4)</th>
+			        <th>Altitude above sea(m)</th>
+			      </tr>
+			    </thead>
+
+			    <tbody>
+			      <tr>
+			        <td>---</td>
+			        <td>---</td>
+			        <td>---</td>
+			        <td>---</td>
+			        <td>---</td>
+			        
+			      </tr>
+			    </tbody>
+			  </table>
+			</div>
+
+      </div>
+
+      
+
+      
+   </body>
+</html>
+
+
+      <script type="text/javascript">
+         function WebSocketTest()
+         {
+            if ("WebSocket" in window)
+            {
+               //alert("WebSocket is supported by your Browser!");
+               
+               // Let us open a web socket
+               var ws = new WebSocket("ws://localhost:8888/ws");
+            
+               ws.onopen = function()
+               {
+                  // Web Socket is connected, send data using send()
+                 ws.send("hello");
+                  //alert("Message is sent...");
+                  document.getElementById("sse").innerHTML = "Connected 2 BS server";
+                  //document.remove(document.getElementById("sse"));
+
+               };
+            
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  //alert("Message is received... ==> " + received_msg);
+	               handleBSATdata(received_msg);
+               };
+            
+               ws.onclose = function()
+               { 
+                  // websocket is closed.
+                  //alert("Connection is closed..."); 
+               };
+            }
+            
+            else
+            {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+         }
+      </script>
+
+
+
+      <script type="text/javascript">
+
+      var first_data = true;
+
+         function handleBSATdata(data)
+         {
+            //alert(data);
+
+            if(first_data)
+            {
+            	first_data = false;
+            	document.getElementById('BStable').style.display = 'block';
+            	document.getElementById('imgbutton').style.display = 'block';
+
+            }
+
+            console.log(data);
+            
+            data.trim();
+
+            var segments = data.split(",");
+
+   			for (var i=0;i<5;i++)
+   			{
+   				if(i<4)
+            		document.getElementsByTagName("td").item(i).innerHTML = segments[i];
+            	else if(i==4)
+            		document.getElementsByTagName("td").item(i).innerHTML = segments[i+2];
+                
+            }
+
+            var pos = [segments[4],segments[5]]
+            localStorage.setItem("pos", pos );
+         }
+
+         //handleBSATdata("100,200,300,400\n");
+      </script>
+
+      

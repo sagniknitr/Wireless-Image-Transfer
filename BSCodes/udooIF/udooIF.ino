@@ -1,4 +1,19 @@
+#include <MQ135.h>
+
 #include <ctype.h>
+
+#include <TinyGPS.h>
+
+String GPS_latitude="NA";
+String GPS_longitude = "NA";
+String GPS_altitude = "NA";
+String GPS_kmph = "NA";
+
+#define gpsSerial Serial3
+
+#include <MT_GPS.h>
+
+MQ135 MQ135Sensor = MQ135(A8);
 
 int UVOUT = A7; //Output from the sensor
 int REF_3V3 = A0; //3.3V power on the Arduino board
@@ -17,17 +32,24 @@ int i=0,j=0,k=0;
 char GPGGA_array[40];
 
 
+char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
+  char fmt[20];
+  sprintf(fmt, "%%%d.%df", width, prec);
+  sprintf(sout, fmt, val);
+  return sout;
+}
+
 
 void config_sensors()
 {
 
   Serial3.begin(9600);
-  //pinMode(0,OUTPUT); /// -----> CANT USE 0 AS IT IS SERIAL0s PIN
+  pinMode(A0,OUTPUT); /// -----> CANT USE 0 AS IT IS SERIAL0s PIN
   pinMode(UVOUT, INPUT);
   pinMode(REF_3V3, INPUT);
   pinMode(A1,INPUT);
   pinMode(A6,INPUT);
-  pinMode(A8,INPUT);
+  //pinMode(A8,INPUT);
   pinMode(A9,INPUT);
   pinMode(42,OUTPUT);
  
@@ -54,6 +76,8 @@ void configuration()
   digitalWrite(xtend_pin,HIGH);
   
   while(xtend.available())xtend.read(); //flush input 
+
+  gpsSerial.begin(9600);
  
 }
 
@@ -152,7 +176,7 @@ String check_udoo_command()
 {
   String cmd = "";
   
-  //while(Serial.available())Serial.read();
+  while(Serial.available())Serial.read();
   unsigned long now = millis();
   unsigned long timeout = 20000; // in ms
 
@@ -251,7 +275,7 @@ void serve()
    //if(xtend.available())while(xtend.available()) Serial.write(xtend.read());
     //xtend.println("rcvd cmd:"+x);
     
-    delay(1000);
+    delay(100);
     
    }
 }
@@ -261,6 +285,7 @@ void loop() {
 
   serve();
   readSensors();
+  delay(1000);
 }
 
 
@@ -290,18 +315,69 @@ float sensorvalues()
   //delay(1000);
   Serial3.write(13);//ASCII Carriage return=13
   ultimate="";
-  ultimate1=""; 
+  ultimate1="";
 }
+
+char prepareGPS()
+{
+  char gps_available_flag = 0;
+  
+  if (getGPSlatLonAlt())
+  {
+    char GPSlat[12],GPSlon[12],GPSalt[12];
+    
+    dtostrf(GPSflat,8,7,GPSlat);  //convert float to char[] buffer/array
+    dtostrf(GPSflon,8,7,GPSlon);
+    dtostrf(GPSfalt,8,7,GPSalt);
+    
+    GPS_latitude = String(GPSlat);
+    GPS_longitude = String(GPSlon);
+    GPS_altitude = String(GPSalt);
+    GPS_kmph = String(GPSkmph);
+    
+    //Serial.print("Actual: ") ; Serial.println(GPSflat,7);
+    //Serial.println(GPS_latitude);
+    //return;
+ 
+    Serial.println("LAT : " + GPS_latitude);
+    Serial.println("LON : " + GPS_longitude);
+
+    
+    //Serial.println(String(GPSsentences));
+    
+    gps_available_flag=1;
+  }
+  
+  if(gps_available_flag)
+  {
+    return 1; 
+  }
+  else
+  {
+    
+    return 0;
+  }
+ 
+}
+
 
 void readSensors()
 {
+  prepareGPS();
   s1=analogRead(A1);
   s2=analogRead(A6);
-  s3=analogRead(A8);
+  float MQ135ppm = MQ135Sensor.getPPM();
+  s3 = (int) MQ135ppm;
+  //s3=analogRead(A8);
   s4=analogRead(A9);
   digitalWrite(42,HIGH);
   float sen=sensorvalues();
-  String datastr =String(s1)+","+String(s2)+","+String(s3)+","+String(s4);
+  String datastr =String(s1)+","+String(s2)+","+String(s3)+","+String(s4)+ "," +
+      
+    GPS_latitude + "," + 
+    GPS_longitude + "," + 
+    GPS_altitude + "," + 
+    GPS_kmph ;
   //Serial.println(datastr);
   xtend.println(datastr);
 }

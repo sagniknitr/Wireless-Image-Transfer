@@ -32,8 +32,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 while True:
                     data,client = s.recvfrom(100)
                     print "BSAT data ===>",data
-                    if len(data) > 20:
-                        data = data[:20]
                     self.write_message(data)
 
  

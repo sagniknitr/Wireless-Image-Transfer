@@ -27,8 +27,6 @@ def rcvImage(ImageFile="rcv.jpg"):
 			if rcvCmdValidity==None:
 				print "Invalid command from Satellite."
 				print "Expected format BS+PUSHIMG=(\d+) , but got:",rcvCmd
-				break;
-
 				#return False
 			else:
 				break
@@ -48,7 +46,7 @@ def rcvImage(ImageFile="rcv.jpg"):
 
 		buffersize = 2048 # note this must be less than 4096
 
-		Arduino.timeout = (buffersize / (baud/10)) * 2
+		Arduino.timeout = (buffersize / (baud/10)) * 3
 
 		f = open(ImageFile,'wb')
 
@@ -79,12 +77,10 @@ def rcvImage(ImageFile="rcv.jpg"):
 		print "Unexpected error:",e
 		return False
 	finally:
-                f.close()
+		f.close()
 		print "Please wait... Returning to data capture mode..."
-		time.sleep(10)
-		#Arduino.flushInput()
-                #Arduino.flushOutput()
-                Arduino.read(1000)
+		#time.sleep(7)
+		#Arduino.reset_input_buffer()
 
 
 
@@ -127,9 +123,19 @@ if __name__ == "__main__":
 			SATdata =  Arduino.readline()
 			print SATdata
 			s.sendto(SATdata,server)
+			with open("log.txt", 'a') as outfile:
+				outfile.write(SATdata)
 			
 		except KeyboardInterrupt:
-			rcvImage()
+			import datetime
+			rcvFname = datetime.datetime.now().strftime("%b_%d_%Y_%H-%M-%S.jpg")
+			rcvImage(rcvFname)
+			import subprocess
+			subprocess.check_output("copy " + rcvFname + " rcv.jpg /Y",shell=1)
+			time.sleep(7)
+			Arduino.reset_input_buffer()
+
+
 
 
 
